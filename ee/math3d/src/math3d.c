@@ -189,6 +189,40 @@
 }
 
 void vector_cross_product(VECTOR product, VECTOR multiplicand, VECTOR multiplier) {
+  asm __volatile__ (
+#if __GNUC__ > 3
+    "lqc2		vf1, 0x00(%1) \n"
+    "lqc2		vf2, 0x00(%2) \n"
+
+    "vmula.x   ACCx, vf1y, vf2z \n"
+    "vmula.y   ACCy, vf1z, vf2x \n"
+    "vmula.z   ACCz, vf1x, vf2y \n"
+
+    "vmsub.x   vf2x, vf1z, vf2y \n"
+    "vmsub.y   vf2y, vf1x, vf2z \n"
+    "vmsub.z   vf2z, vf1y, vf2x \n"
+
+    "sqc2    vf2, 0x00(%0) \n"
+
+#else
+
+    "lqc2		$vf1, 0x00(%1) \n"
+    "lqc2		$vf2, 0x00(%2) \n"
+
+    "vmula.x   $ACCx, $vf1y, $vf2z \n"
+    "vmula.y   $ACCy, $vf1z, $vf2x \n"
+    "vmula.z   $ACCz, $vf1x, $vf2y \n"
+
+    "vmsub.x   $vf2x, $vf1z, $vf2y \n"
+    "vmsub.y   $vf2y, $vf1x, $vf2z \n"
+    "vmsub.z   $vf2z, $vf1y, $vf2x \n"
+
+    "sqc2    $vf2, 0x00(%0) \n"
+#endif
+    : : "r" (product), "r" (multiplier), "r" (multiplicand)
+    : "memory"
+  );
+
   VECTOR work;
   work[0] = multiplicand[1] * multiplier[2] - multiplicand[2] * multiplier[1];
   work[1] = multiplicand[2] * multiplier[0] - multiplicand[0] * multiplier[2];
