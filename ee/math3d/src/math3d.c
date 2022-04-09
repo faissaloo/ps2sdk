@@ -171,12 +171,21 @@
  }
  
  void vector_add(VECTOR sum, VECTOR addend, VECTOR summand) {
-  VECTOR work;
-  work[0] = addend[0]+summand[0];
-  work[1] = addend[1]+summand[1];
-  work[2] = addend[2]+summand[2];
-  work[3] = addend[3]+summand[3];
-  vector_copy(sum, work);
+  asm __volatile__ (
+#if __GNUC__ > 3
+    "lqc2		$vf1, 0x00(%1)	\n"
+    "lqc2		$vf2, 0x00(%2)	\n"
+    "vadd.xyz		$vf3xyz, $vf1xyz, $vf2xyz\n"
+    "sqc2		$vf3, 0x00(%0)	\n"
+#else
+    "lqc2		vf1xyz, 0x00(%1)	\n"
+    "lqc2		vf2xyz, 0x00(%2)	\n"
+    "vadd.xyz		vf3xyz, vf1xyz, vf2xyz\n"
+    "sqc2		vf3, 0x00(%0)	\n"
+#endif
+   : : "r" (sum), "r" (addend), "r" (summand)
+   : "memory"
+  );
 }
 
 void vector_cross_product(VECTOR product, VECTOR multiplicand, VECTOR multiplier) {
